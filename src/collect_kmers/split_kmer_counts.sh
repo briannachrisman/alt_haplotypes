@@ -16,8 +16,8 @@ cd /home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/kmers
 ml parallel 
 split_func() {
     echo $1
-    txtfile=$1
-    sample=${txtfile/.query_counts.unmapped_reads.txt/}
+    sample=$1
+    txtfile=${sample}/${sample}.query_counts.unmapped_reads.txt
     echo "deleting first line"
     if [ $(sed -n "1{/^$sample/p};q" $txtfile) ]; then
         tail -n +2 "$txtfile" > "$txtfile.tmp" && mv "$txtfile.tmp" "$txtfile" # Remove first line of file (sample name), shouldn't have added this in the first place.
@@ -28,7 +28,7 @@ split_func() {
     
     # Add sample name to start of all files.
     echo "Adding sample name to split files"
-    for f in ${sample}.query_counts.unmapped_reads.*.txt; do 
+    for f in ${sample}/${sample}.query_counts.unmapped_reads.*.txt; do 
         sed  -i "1i $sample" $f
     done
     
@@ -40,7 +40,7 @@ export -f split_func
 
 N=$((SLURM_ARRAY_TASK_ID -1))
 N=$(printf "%02g" $N)
-for f in *$N.query_counts.unmapped_reads.txt; do
+for f in *$N; do
     split_func $f
 done
 #parallel -j $SLURM_CPUS_PER_TASK split_func ::: *$N.query_counts.unmapped_reads.txt
