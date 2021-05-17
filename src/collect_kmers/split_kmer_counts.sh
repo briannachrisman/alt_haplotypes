@@ -35,8 +35,9 @@ split_func() {
         done
 
         echo "zipping back up to save space"
-        gzip $txtfile # Zip back up to save some space.
     fi
+    gzip $txtfile # Zip back up to save some space.
+
 }
 
 export -f split_func

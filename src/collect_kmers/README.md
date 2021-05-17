@@ -2,8 +2,8 @@
 Extracting common(ish) kmers & counts from ultimately unmapped reads.
 
 ## Storage
-- **Intermediate files**: ```HOME/alt_haplotypes/intermediate_results/kmers```
-- **Final results**: ```HOME/alt_haplotypes/results/kmers```
+- **Intermediate files**: ```MY_HOME/alt_haplotypes/intermediate_results/kmers```
+- **Final results**: ```MY_HOME/alt_haplotypes/results/kmers```
 
 ## Prerequisites
 
@@ -19,22 +19,16 @@ Extracting common(ish) kmers & counts from ultimately unmapped reads.
     - ***Inputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.fa```
     - ***Outputs***: ```../intermediate_files/kmers/kmers.kmers.unmapped_reads.list.list```
 
-3. ✓ ```query_kmers.sh```: Query each sample for count of each non-unique kmers (Can use get_unfinished_samples.ipynb to update finished/unfinished samples) ***TODO: Currently running.***
+3. ✓ ```query_kmers.sh```: Query each sample for count of each non-unique kmers (Can use get_unfinished_samples.ipynb to update finished/unfinished samples)
     - ***Inputs***: ```../intermediate_files/kmers/kmers.kmers.unmapped_reads.list```, ```../intermediate_files/kmers/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.jf```
     - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.kmers.unmapped_reads.list.txt```
 
 4. ✓ ```split_kmer_counts.sh```: Splits each sample kmer counts into many different files/kmer sets for concatenation.
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.txt```
     - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.<KMER_REGION>.txt```    
-     ***Currently Running: 3,971 finished as of 5/14/2021. ***
 
-6. ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region.
+6. ✓ ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region.
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.list.txt```
-    - ***Outputs***: ```../intermediate_files/kmers/query_counts.unmapped_reads.<KMER_REGION>.tsv```
-    
-7. ```move_to_results.sh```: Move to permanent results directory.
-    - ***Inputs***: ```../intermediate_files/kmers/query_counts.unmapped_reads.<KMER_REGION>.tsv```
-    - ***Outputs***: ```../results/kmers/query_counts.unmapped_reads.<KMER_REGION>.tsv.gz```
-
+    - ***Outputs***: ```../results/kmers/query_counts.unmapped_reads/query_counts.unmapped_reads.<KMER_REGION>.tsv```
 
 Note: Ran ```move.sh``` and ```organize_directories.sh``` to reorganize file structure a bit to make linux commands run faster.
