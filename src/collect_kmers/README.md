@@ -23,10 +23,10 @@ Extracting common(ish) kmers & counts from ultimately unmapped reads.
     - ***Inputs***: ```../intermediate_files/kmers/kmers.kmers.unmapped_reads.list```, ```../intermediate_files/kmers/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.jf```
     - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.kmers.unmapped_reads.list.txt```
 
-4. ```split_kmer_counts.sh```: Splits each sample kmer counts into many different files/kmer sets for concatenation.
+4. ✓ ```split_kmer_counts.sh```: Splits each sample kmer counts into many different files/kmer sets for concatenation.
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.txt```
     - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.<KMER_REGION>.txt```    
-     ***Currently Running: 3,956 finished as of 5/12/2021. ***
+     ***Currently Running: 3,971 finished as of 5/14/2021. ***
 
 6. ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region.
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.list.txt```
