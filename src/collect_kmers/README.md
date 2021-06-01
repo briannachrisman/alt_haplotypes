@@ -32,3 +32,5 @@ Extracting common(ish) kmers & counts from ultimately unmapped reads.
     - ***Outputs***: ```../results/kmers/query_counts.unmapped_reads/query_counts.unmapped_reads.<KMER_REGION>.tsv```
 
 Note: Ran ```move.sh``` and ```organize_directories.sh``` to reorganize file structure a bit to make linux commands run faster.
+
+**June 1, 2020 Finished running pipeline.**
