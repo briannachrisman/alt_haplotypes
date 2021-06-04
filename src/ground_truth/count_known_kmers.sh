@@ -56,3 +56,6 @@ for I_TO_ADD in 0 ; do # 1000 2000 3000 4000; do
     \rm $SCRATCH/tmp/tmp_kmers_from_unmapped_reads_$SLURM_ARRAY_TASK_ID.txt 
 done
 
+
+cut -f1 $MY_HOME/alt_haplotypes/intermediate_files/ground_truth/sample_kmer_counts/known_alt_haplotype_kmers.txt | xargs jellyfish query kmers.jf | awk  '{print $2}' > kmer_counts.txt
+

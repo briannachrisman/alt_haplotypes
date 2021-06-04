@@ -17,7 +17,8 @@ paste $phasings_dir/chrom.txt $phasings_dir/start.txt $phasings_dir/end.txt | so
 
 sed -i '/start_pos/d' $phasings_dir/regions.tsv # Delete the accidental header line that got mixed in during sort.
 
-python3.6 $MY_HOME/alt_hapltotypes/phasings/sort_regions.py
+python3.6 $MY_HOME/alt_haplotypes/src/phasings/sort_regions.py
+
 
 \rm $phasings_dir/regions.tsv 
 \rm $phasings_dir/start.txt

@@ -1,11 +1,11 @@
 #!/bin/sh
 #SBATCH --job-name=concat_kmer_counts
-#SBATCH --partition=owners
-#SBATCH --array=5-511
+#SBATCH --partition=dpwall
+#SBATCH --array=11,14,62,65,212,279,280,281,395,418,424,431,512
 #SBATCH --output=/scratch/users/briannac/logs/concat_kmer_counts_%a.out
 #SBATCH --error=/scratch/users/briannac/logs/concat_kmer_counts_%a.err
 #SBATCH --time=1:00:00
-#SBATCH --mem=5G
+#SBATCH --mem=10G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
@@ -17,7 +17,7 @@ N=$(printf "%03g" $N)
 
 cd $MY_HOME/alt_haplotypes/intermediate_files/ground_truth
 
-if [ ! -f $MY_HOME/alt_haplotypes/results/ground_truth/sample_kmer_matrix/kmers.$N.tsv.gz ]; then
+if [ ! -f $MY_HOME/alt_haplotypes/intermediate_files/ground_truth/sample_kmer_matrix/kmers.$N.tsv.gz ]; then
 
     # Transform sample/batch matrix into list of file names.
     cut -f1 $MY_HOME/general_data/samples_and_batches.tsv  > $MY_SCRATCH/tmp/concat_known_kmers.$N.out
@@ -40,7 +40,7 @@ if [ ! -f $MY_HOME/alt_haplotypes/results/ground_truth/sample_kmer_matrix/kmers.
     gzip  $MY_SCRATCH/tmp/concat_known_kmers.$N.final.tsv -f
     
     echo "moving to OAK..."
-    mv $MY_SCRATCH/tmp/concat_known_kmers.$N.final.tsv.gz $MY_HOME/alt_haplotypes/results/ground_truth/sample_kmer_matrix/kmers.$N.tsv.gz
+    mv $MY_SCRATCH/tmp/concat_known_kmers.$N.final.tsv.gz $MY_HOME/alt_haplotypes/intermediate_files/ground_truth/sample_kmer_matrix/kmers.$N.tsv.gz
     # $MY_HOME/alt_haplotypes/results/ground_truth/sample_kmer_matrix/kmers.$N.tsv -f
     
     echo "Cleaning up..."
@@ -50,3 +50,10 @@ if [ ! -f $MY_HOME/alt_haplotypes/results/ground_truth/sample_kmer_matrix/kmers.
 fi
 
 
+#for i in {0..512}; do 
+#    N=$((i-1))
+#    N=$(printf "%03g" $N)
+#    if [ ! -f $MY_HOME/alt_haplotypes/intermediate_files/ground_truth/sample_kmer_matrix/kmers.$N.tsv.gz ]; then
+#    echo $i
+#    fi
+#done

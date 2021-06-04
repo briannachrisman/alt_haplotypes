@@ -10,4 +10,5 @@
 
 ### file at /home/groups/dpwall/briannac/alt_haplotypes/src/phasings/list_of_global_and_family_regions.sh
 
-python3 -u /home/groups/dpwall/briannac/alt_haplotypes/src/phasings/list_of_global_and_family_regions.py
+ml python/3.6
+python3.6 -u /home/groups/dpwall/briannac/alt_haplotypes/src/phasings/list_of_global_and_family_regions.py

@@ -3,7 +3,7 @@
 #SBATCH --partition=dpwall
 #SBATCH --output=/scratch/users/briannac/logs/concat_family_regions_to_global.out
 #SBATCH --error=/scratch/users/briannac/logs/concat_family_regions_to_global.err
-#SBATCH --time=0:01:00
+#SBATCH --time=0:10:00
 #SBATCH --mem=120GB
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
