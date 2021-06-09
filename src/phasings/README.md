@@ -26,11 +26,11 @@ Computes dictionaries, mappings, etc. related to phasings. To be used in later i
     - **outputs**: ```data/phasings/family_regions.df```, ```starts_stops_chrom.df```, ```idx_to_global_region.npy```, ```global_region_to_idx.npy```, ``idx_to_family_region.npy```, ```family_region_to_idx.npy```
 
 
-4. TODDO ```family_regions_to_global.sh```: For each chromsome, creates a dictionary to convert family region idx to global region(s) idx(s). 
+4. ✓ ```family_regions_to_global.sh```: For each chromsome, creates a dictionary to convert family region idx to global region(s) idx(s). 
     IE family region dict_chr1[10]=100,101,102
     - **inputs**: ```intermediate_files/phasings/global_region_to_idx.npy```, ```fam_region_to_idx.npy```, ```starts_stops_chrom.npy```, ```family_regions.npy```
     - **outputs**: ```intermediate_files/phasings/fam_regions_to_global_region_[chrom].npy```
 
-5. TODO ```concat_family_regions_to_global.sh```: Concatenates individual chromosomal dictionaries family_region_to_global_region_chr%i.npy to genome-wide dictionary.  
+5. ✓ ```concat_family_regions_to_global.sh```: Concatenates individual chromosomal dictionaries family_region_to_global_region_chr%i.npy to genome-wide dictionary.  
     - **inputs** ```intermediate_files/phasings/fam_regions_to_global_region_[chrom].npy```
     - **outputs** ```data/phasings/fam_regions_to_global_region.npy```
