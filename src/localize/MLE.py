@@ -1,10 +1,16 @@
 from scipy.stats import poisson
+import time
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+from Bio import SeqIO
+from collections import Counter
+import matplotlib.pyplot as plt
 from glob import glob
+import json
+import pickle
 
 def GlobalInterval(L, prob_thresh=.95):
-    print('global babay')
     '''
         Returns the tightest genomic region where the probability of a k-mer occuring is at least prob_thresh, given the likelihoods L at each region.
                 Parameters:
@@ -21,7 +27,8 @@ def GlobalInterval(L, prob_thresh=.95):
     smallest_end = np.where(cumsum>prob_thresh)[0][0]
     cumsum = np.cumsum(P[::-1])[::-1]
     largest_start = np.where(cumsum>prob_thresh)[0][-1]
-
+    #return (largest_start, smallest_end)
+    if idx_to_global_region[smallest_end][:2] != idx_to_global_region[largest_start][:2]:  return (largest_start, smallest_end) # > 1000: return (0, len(idx_to_global_region)-1)
     shortest_segment = min(smallest_end, len(P)-largest_start)
     interval = (np.nan,np.nan)
     for start in [s for s in range(largest_start)][::-1]:
@@ -38,19 +45,18 @@ def GlobalInterval(L, prob_thresh=.95):
 
 
 class MLE:
-    def __init__(self, avg_kmer_depth, poisson_cache_length, eps=0):
-        print('initializing')
+    def __init__(self, avg_kmer_depth, poisson_cache_length, eps=0, phasing_error=.05):
         self.poisson_cache = [[], []]
         self.avg_kmer_depth=avg_kmer_depth
         self.poisson_cache[0] = [poisson.pmf(k=k, mu=avg_kmer_depth) for k in range(poisson_cache_length)]
         self.poisson_cache[1] = [poisson.pmf(k=k, mu=2*avg_kmer_depth) for k in range(poisson_cache_length)]
         self.cached_family_log_likelihood = dict()
         self.eps = eps
-        
-        
-        
-        
-        
+        self.phasing_error=phasing_error
+        with open('/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/phased_fams/phased_fams_all.pickle', 'rb') as f:
+            self.phased_fam_dict = pickle.load(f)
+
+            
     def cached_poisson_pmf(self,k,g):
         if (g==0) & (k!=0):
             return self.eps
@@ -78,17 +84,20 @@ class MLE:
                         log likelihood (float): The log of the probability of the family's k-mer distribution given the famiy genotypes.
         '''    
 
-        key = tuple(sorted([(k_m, k_p, k,g[0], g[1]) for k,g in zip(k_cs, phases_ch)]))
-        if key in self.cached_family_log_likelihood: log_P = self.cached_family_log_likelihood[key]
-        else:
+        #key = tuple(sorted([(k_m, k_p, k,g[0], g[1]) for k,g in zip(k_cs, phases_ch)]))
+        key = tuple([(k_m, k_p, k,g[0], g[1]) for k,g in zip(k_cs, phases_ch)])
+        # TODO ADD TO KEY
+        #if key in self.cached_family_log_likelihood: log_P = self.cached_family_log_likelihood[key]
+        #else:
+        if True:
             possible_gs = [(0,0), (1,1), (0,1), (1,0)]
-            log_P_m = np.log2(sum([self.cached_poisson_pmf(k_m, g) for g in [0,1,1,2]]))
-            log_P_p= np.log2(sum([self.cached_poisson_pmf(k_p, g) for g in [0,1,1,2]]))
+            #log_P_m = np.log2(sum([self.cached_poisson_pmf(k_m, g) for g in [0,1,1,2]]))
+            #log_P_p= np.log2(sum([self.cached_poisson_pmf(k_p, g) for g in [0,1,1,2]]))
             log_P_ch = np.log2(sum([self.cached_poisson_pmf(k_m,sum(g_m))*self.cached_poisson_pmf(k_p,sum(g_p))*
                                     np.prod([self.cached_poisson_pmf(k_c, g_m[phase_ch[0]]+g_p[phase_ch[1]]) 
                                              for k_c, phase_ch in zip(k_cs, phases_ch)]) for g_p in possible_gs for g_m in possible_gs]))
-            log_P = log_P_ch-log_P_m-log_P_p
-            self.cached_family_log_likelihood[key] = log_P
+            log_P = log_P_ch#-log_P_m-log_P_p
+            #self.cached_family_log_likelihood[key] = log_P
 
             if log_P>0: print("ERROR: log likelihood cannot be > 0")
         return log_P
@@ -97,54 +106,47 @@ class MLE:
     
     
     
-    def GlobalLikelihood(self,kmer_counts, bam_mappings, family_info, global_region_to_idx, fam_region_to_idx, fam_idx_to_global_idx, MAX_FAMS=100):
-        final_likelihoods = {}
-        families_in_file = [i.replace('.txt', '').split('/')[-1] for i in glob(
-            '/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/phased_fams/*.txt')]
-        sample_id_to_participant = {sample_id:participant_id for participant_id, sample_id in zip(bam_mappings.participant_id, bam_mappings.index)}
-        for k in kmer_counts.iterrows():
-            print(k[0])
-            global_likelihoods = [] #np.zeros(len(global_region_to_idx)) 
-            fams_included = set(bam_mappings.loc[kmer_counts.columns[k[1]>0]].family).intersection(family_info.index).intersection(families_in_file)
-            for fam in (list(fams_included)[:MAX_FAMS]):  
-                global_likelihood = np.zeros(len(global_region_to_idx)) 
+    def GlobalLikelihood(self,kmer_count, bam_mappings, family_info, global_region_to_idx, fam_region_to_idx, fam_idx_to_global_idx, MAX_FAMS=None):
+        global_likelihoods = [] #np.zeros(len(global_region_to_idx)) 
+        fams_included = set(bam_mappings.loc[np.array(kmer_count[1].keys())[kmer_count[1].values>0]].family).intersection(self.phased_fam_dict.keys())
+        if MAX_FAMS: fams_included = list(fams_included)[:min(MAX_FAMS, len(fams_included))]
+        for fam in fams_included:
+            
+            # Initialize global likelihood
+            global_likelihood = np.zeros(len(global_region_to_idx)) 
 
 
-                # Extract mom, dad, and child sample_ids.
-                children = family_info.loc[fam].sib_samples
-                mom = family_info.loc[fam].mother_sample
-                dad = family_info.loc[fam].father_sample
-                phased_fam = pd.read_csv('/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/phased_fams/%s.txt' % fam,
-                                         sep='\t')
+            # Extract mom, dad, and child sample_ids.
+            children = family_info.loc[fam].sib_samples
+            mom = family_info.loc[fam].mother_sample
+            dad = family_info.loc[fam].father_sample
+            phased_fam = self.phased_fam_dict[fam]
 
-                # Skip family if dataframe is weird.
-                missing_children=False
-                for ch in children:
-                    if sample_id_to_participant[ch] + '_mat' not in phased_fam.columns: 
-                        missing_children=True
-                        break
-                if missing_children: continue
+            # Compute likelihood of family's k-mer distribution for each phasing configuration.
+            fam_likelihood = np.zeros(len(phased_fam))
+            phasings = [tuple(phased_fam[children].iloc[i].values) for i in range(len(phased_fam))]
+            possible_phasings = set(phasings)
+            phasing_ps = np.array([2**self.family_log_likelihood(kmer_count[1][mom], kmer_count[1][dad], kmer_count[1][children], phase) 
+                          for phase in possible_phasings])
+            phasing_ps = self.phasing_error*(sum(phasing_ps) - phasing_ps) + (1-self.phasing_error)*phasing_ps
+            for phase, phase_p in zip(possible_phasings, phasing_ps):   
+                idx = np.where([p==phase for p in phasings])[0]
+                fam_likelihood[idx] = np.log2(phase_p)
+            
+            
+            #for phase in possible_phasings:
+            #    idx = np.where([p==phase for p in phasings])[0]
+            #    fam_likelihood[idx] = self.family_log_likelihood(kmer_count[1][mom], kmer_count[1][dad], kmer_count[1][children], phase) #for i in range(len(phased_fam))
+            #print(min(fam_likelihood), max(fam_likelihood))
+            
+            
+            # Convert family likelihood region to global region. 
+            for i,l in enumerate(fam_likelihood):
+                global_idxs = fam_idx_to_global_idx[fam_region_to_idx[phased_fam.index[i]]]
+                global_likelihood[global_idxs] =  l
                 
-                # Set up phasing dataframe.
-                for ch in children:
-                    phased_fam[ch] = [(m,d-2) for m,d in zip(phased_fam[sample_id_to_participant[ch]+'_mat'], phased_fam[sample_id_to_participant[ch]+'_pat'])]
-                phased_fam.index = ['%s.%09d.%09d' % (('0' + chrom[3:])[-2:].replace('0X', 'XX'), start, end) for chrom, start, end in phased_fam[['chrom', 'start_pos', 'end_pos']].values]
-                #phased_fam = phased_fam[children]
+            # For regions with unknown phasings in the current family, default to the median likelihood across the rest of the genome.
+            global_likelihood[global_likelihood==0] = np.median(global_likelihood[global_likelihood!=0])
+            global_likelihoods = global_likelihoods + [global_likelihood]
 
-                # Compute family likelihood.
-                fam_likelihood = [self.family_log_likelihood(k[1][mom], k[1][dad], k[1][children], phased_fam[children].iloc[i]) for i in range(len(phased_fam))]
-
-                # Convert family likelihood region to global region. 
-                for i,l in enumerate(fam_likelihood):
-                    global_idxs = fam_idx_to_global_idx[fam_region_to_idx[phased_fam.index[i]]]
-                    global_likelihood[global_idxs] =  l
-                global_likelihood[global_likelihood==0] = np.mean(global_likelihood[global_likelihood!=0])
-                global_likelihoods = global_likelihoods + [global_likelihood]
-
-            final_likelihoods[k[0]] = np.array(global_likelihoods).sum(axis=0)
-            #try:
-            #    print(GlobalInterval(final_likelihoods[k[0]]))
-            #except: donothing=True
-            #print([idx_to_global_region[i] for i in np.argsort(final_likelihood)[::-1][:100:10]])
-        return final_likelihoods
-
+        return np.array(global_likelihoods).sum(axis=0)
