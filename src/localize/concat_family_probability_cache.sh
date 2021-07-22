@@ -3,8 +3,8 @@
 #SBATCH --partition=dpwall
 #SBATCH --output=/scratch/users/briannac/logs/concat_family_probability_cache.out
 #SBATCH --error=/scratch/users/briannac/logs/concat_family_probability_cache.err
-#SBATCH --time=20:00:00
-#SBATCH --mem=200G
+#SBATCH --time=100:00:00
+#SBATCH --mem=700G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 

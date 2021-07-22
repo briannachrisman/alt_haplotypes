@@ -16,6 +16,16 @@ Computing matrix of sample x kmer corresponding to known/localized alternative h
     - ***Inputs***: ```s3://ihart-hg38/cram/<SAMPLE>.final.cram```
     - ***Outputs***: ```./intermediate_files/ground_truth/sample_kmer_counts/<SAMPLE>/kmer_counts.txt```
 
-4.  ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region. **June 1, 2020 CURRENTLY RUNNING**
+4.  ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region. 
+    - ***Inputs***:  ```../intermediate_files/ground_truth/sample_kmer_counts/<SAMPLE>/kmer_counts.<REGION>.txt``` 
+    - ***Inputs***:  ```../results/ground_truth/kmer_count_matrix/kmer_counts.<REGION>.tsv.gz```
+    
+    
+5.  ```filter_kmers.sh```: Filters kmers
+    - ***Inputs***:  ```../intermediate_files/ground_truth/sample_kmer_counts/<SAMPLE>/kmer_counts.<REGION>.txt``` 
+    - ***Inputs***:  ```../results/ground_truth/kmer_count_matrix/kmer_counts.<REGION>.tsv.gz```
+    
+    
+6.  ```concat_filtered_kmers.sh```: Concatenates filtered kmers
     - ***Inputs***:  ```../intermediate_files/ground_truth/sample_kmer_counts/<SAMPLE>/kmer_counts.<REGION>.txt``` 
     - ***Inputs***:  ```../results/ground_truth/kmer_count_matrix/kmer_counts.<REGION>.tsv.gz```

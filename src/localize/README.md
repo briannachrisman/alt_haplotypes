@@ -9,31 +9,21 @@ Scripts to localize k-mers to specific regions of the genome via a likelihood mo
 ## Pipeline
 
 
-1. ***CURRENTLY RUNNING***  ```build_family_probability_cache.sh```: Computes dictionaries of the log-likelihood that a family with phasings P has various k-mer count distributions. This dictionary will then be used to lookup probabilities in the likelihood model in order to speed up computation.
-    - **Inputs**: ```alt_haplotypes/data/phasings/phased_fams/phased_fams_all.pickle```, ```general_data/flagstat.csv```, ```general_data/bam_mappings.csv```
-    - **Outputs**: ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-    
-2. ```concat_family_probability_cache.sh```: This concatenates all of the family log-likelihoods into one large dictionary.
-    - **Inputs**:  ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-    - **Outputs**:  ```alt_haplotypes/data/localize/family_probability_cache.pickle```
+1. ```family_likelihoods.sh```: For each family, computes (1) a matrix of Likelihoods with possible phasings for rows x kmers for columns and (2) a presence/absence matrix with possible phasings as rows and global regions as columns.
+    - **Outputs**:  ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>/likelihood_matrix_phasings_kmers_fam<FAM_NUM>.tsv```, ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>/global_regions_phasings_fam<FAM_NUM>.tsv```
 
-3. ```localize_<dataset>.sh```: Localize.
 
-```localize_simulated_kmers.sh```: Compute likelihoods and localize
-- **Inputs**:  ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-- **Outputs**:  ```alt_haplotypes/data/localize/family_probability_cache.pickle```
+2. ```concat_family_likelihoods.sh```: Concatenates lengthwise the outputs from ```family_likelihoods.sh``` to get (1) (1) a matrix of Likelihoods with kmers for rows x each family's possible phasings for columns and (2) a presence/absence matrix with each global regions as rows and family's possible phasings as columns.
+    - **Inputs**:  ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>/likelihood_matrix_phasings_kmers_fam<FAM_NUM>.tsv```, ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>/global_regions_phasings_fam<FAM_NUM>.tsv```
+    - **Outputs**:  ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>_likelihood_matrix_phasings_kmers.tsv```, ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>_global_regions_phasings.tsv```
 
-```localize_known_decoys.sh```: Compute likelihoods and localize 
-- **Inputs**:  ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-- **Outputs**:  ```alt_haplotypes/data/localize/family_probability_cache.pickle```
-    
-```localize_unknown_decoys.sh```: Compute likelihoods and localize 
-- **Inputs**:  ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-- **Outputs**:  ```alt_haplotypes/data/localize/family_probability_cache.pickle```
-    
-```localize_unmapped_reads.sh```: Compute likelihoods and localize 
-- **Inputs**:  ```alt_haplotypes/intermediate_files/localize/family_probability_cache_<PHASING_IDX>.pickle```
-- **Outputs**:  ```alt_haplotypes/data/localize/family_probability_cache.pickle``
-    
-    
+
+3. ```localize_<TYPE>.sh```: For each block of k-mers, find region of maximum/sufficient likelihood.
+    - **Inputs**: ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>_likelihood_matrix_phasings_kmers.tsv```, ```intermediate_files/family_likelihoods/<ground truth|unknown_kmers|unmapped>_global_regions_phasings.tsv```
+    - **Outputs**: ```intermediate_files/approximate_regions/<ground truth|unknown_kmers|unmapped>_approximate_region_<KMER_IDX>.txt```
+
+
+4. ```concat_region_approximations.sh```: Concatenate localized regions for all kmers.
+    - **Inputs**: ```intermediate_files/approximate_regions/<ground truth|unknown_kmers|unmapped>_approximate_region_<KMER_IDX>.txt```
+    - **Outputs**: ```results/approximate_regions/<ground truth|unknown_kmers|unmapped>_approximate_region.txt```
 
