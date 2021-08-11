@@ -42,6 +42,9 @@ family_info = pd.read_pickle(PHASINGS_DIR + 'fam_list.df')
 bam_mappings = pd.read_csv(BAM_MAPPINGS_FILE, sep='\t', index_col=1)
 bam_mappings = bam_mappings[bam_mappings['status']=='Passed_QC_analysis_ready']
 
+# This sample is messed up in the unmapped reads, 
+if 'unmapped' in KMER_COUNTS_FILE:
+    bam_mappings = bam_mappings.drop('09C86428')
 
 # Load in k-mer counts.
 family = family_info.index[IDX]
@@ -50,6 +53,7 @@ samples = [family_info.iloc[IDX]['mother_sample'], family_info.iloc[IDX]['father
 bam_mappings['counter_idx'] = [i for i in range(len(bam_mappings))]
 cols_in_df = bam_mappings.loc[samples].counter_idx.values
 print(samples)
+
 ###################################################################
 #### Prep dict for normalizing k-counts by sample read depth. #####
 ###################################################################
@@ -80,7 +84,8 @@ poisson_cache = [[], []]
 avg_kmer_depth=np.mean(list(kmer_depth_dict.values()))
 poisson_cache[0] = [poisson.pmf(k=k, mu=avg_kmer_depth) for k in range(max_count)]
 poisson_cache[1] = [poisson.pmf(k=k, mu=2*avg_kmer_depth) for k in range(max_count)]
-
+eps = min(min(poisson_cache[0]), min(poisson_cache[1]))
+print(eps)
 def cached_poisson_pmf(k,g):
     if (g==0) & (k!=0): return eps
     if (g==0) & (k==0): return 1-3*eps
@@ -115,10 +120,12 @@ for i in np.where(global_regions_phasings_fam.sum(axis=1)==0)[0]:
 ###########################################################
 ###### Computing phasing x k-mer Likelihood matrix ########
 ###########################################################
+import time
 print("Computing phasing x k-mer region likelihood matrix...")
 phases_kmers_L = np.zeros((N_KMERS,len(family_phasings)))  # Initializ likelihood matrix (phases as rows, kmers as columns)
 chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=10000, usecols=1+cols_in_df, nrows=N_KMERS)
 for kmer_counts in chunks:
+    #print(time.time())
     kmer_counts = kmer_counts[1+cols_in_df]
     kmer_counts.columns = samples
     print(kmer_counts.index[0])

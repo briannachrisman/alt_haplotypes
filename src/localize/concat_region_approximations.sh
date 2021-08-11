@@ -15,7 +15,7 @@
 
 cd $MY_HOME/alt_haplotypes
 
-cat intermediate_files/localize/ground_truth/localized_*.txt > $MY_HOME/alt_haplotypes/results/approximate_regions/localized_ground_truth.tsv
+cat intermediate_files/localize/ground_truth/localized_*.txt > $MY_HOME/alt_haplotypes/results/approximate_regions/localized_ground_truth_Lregions.tsv
 
 #\rm intermediate_files/approximate_regions/ground_truth_approximate_region_*.txt
 

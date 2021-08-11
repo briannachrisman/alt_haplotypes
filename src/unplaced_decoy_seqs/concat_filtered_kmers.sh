@@ -12,12 +12,12 @@
 cd /home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/unplaced_decoy_seqs/sample_kmer_matrix
 
 cat kmers.filt.*.tsv > kmers.filt.tsv
-mv kmers.filt.tsv  /home/groups/dpwall/briannac/alt_haplotypes/data/unknown_kmer_counts.tsv
+mv kmers.filt.tsv  /home/groups/dpwall/briannac/alt_haplotypes/data/unplaced_decoy_seqs_kmer_counts.tsv
  
 #\rm kmers.filt.*.tsv
 
 cat unknown_alt_haplotype_kmers_filt.*.txt > unknown_kmers.txt
-mv unknown_kmers.txt  /home/groups/dpwall/briannac/alt_haplotypes/data/unknown_kmers.txt
+mv unknown_kmers.txt  /home/groups/dpwall/briannac/alt_haplotypes/data/unplaced_decoy_seqs_kmers.txt
 
 
 #\rm unknown_alt_haplotype_kmers_filt.*.txt

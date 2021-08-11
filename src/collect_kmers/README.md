@@ -1,13 +1,12 @@
-# Collect k-mers
-Extracting common(ish) kmers & counts from ultimately unmapped reads.
+# Count Unlocalized Kmers
+
+Computing matrix of sample x kmer corresponding to known/localized alternative haplotype in order to test accuracy / ground truth of algorithm.
+
+## Pre-requisites
+Run kraken pipeline to align unmapped reads to bacterial/viral sequences.
 
 ## Storage
-- **Intermediate files**: ```MY_HOME/alt_haplotypes/intermediate_results/kmers```
-- **Final results**: ```MY_HOME/alt_haplotypes/results/kmers```
-
-## Prerequisites
-
-0.1. Kraken_align pipeline. Relaign reads from iHART that did not align/aligned poorly to hg38 to a database of archaea, human, bacteria, and viral sequences.
+Final results of kmer x sample matrix should be in ```../data/kmers_unmapped_counts_filt.tsv``` and ```../data/kmers_unmapped.txt```.
 
 ## Pipeline
 
@@ -16,21 +15,27 @@ Extracting common(ish) kmers & counts from ultimately unmapped reads.
     - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.jellyfish.unmapped.jf```, ```../intermediate_files/kmers/<SAMPLE>.jellyfish.unmapped.fa```
 
 2. ✓ ```shared_kmers.sh```: Compute list of non-unique k-mers. Note: 264,492,894 total shared kmers.
-    - ***Inputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.fa```
-    - ***Outputs***: ```../intermediate_files/kmers/kmers.kmers.unmapped_reads.list.list```
+    - ***Inputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.jellyfish.kmers.unmapped_reads.fa```
+    - ***Outputs***: ```../intermediate_files/kmers/kmers.unmapped_reads.list```
 
-3. ✓ ```query_kmers.sh```: Query each sample for count of each non-unique kmers (Can use get_unfinished_samples.ipynb to update finished/unfinished samples)
-    - ***Inputs***: ```../intermediate_files/kmers/kmers.kmers.unmapped_reads.list```, ```../intermediate_files/kmers/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.jf```
-    - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.kmers.unmapped_reads.list.txt```
+3. ✓ ```query_kmers.sh```: Query each sample for count of each non-unique kmers (Can use get_unfinished_samples.ipynb to update finished/unfinished samples). Note 157,450,110 total non-unique k-mers.
+    - ***Inputs***: ```../intermediate_files/kmers/kmers_all.list```, 
+    ```../intermediate_files/kmers/<SAMPLE>.jellyfish.kmers.unmapped_reads.list.jf```
+    - ***Outputs***: ```../intermediate_files/unmapped/query_counts.unmapped_reads.<SPLIT>.tsv.gz```
 
 4. ✓ ```split_kmer_counts.sh```: Splits each sample kmer counts into many different files/kmer sets for concatenation.
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.txt```
-    - ***Outputs***: ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.<KMER_REGION>.txt```    
+    - ***Outputs***: ```../intermediate_files/unmapped/query_counts.unmapped_reads.<KMER_BATCH>.txt```    
 
-6. ✓ ```concat_kmer_counts.sh```: Concatenates sample kmer counts for each region.
-    - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.list.txt```
-    - ***Outputs***: ```../results/kmers/query_counts.unmapped_reads/query_counts.unmapped_reads.<KMER_REGION>.tsv```
+4.  ```filter_kmers.sh```: Concatenates sample kmer counts for each k-mer batch.
+    - ***Inputs***:  ```../intermediate_files/unmapped/query_counts.unmapped_reads.<KMER_BATCH>.txt```    
+    - ***Outputs***:  ```../intermediate_files/unmapped/filt/kmers_unmapped_counts.<KMER_BATCH>.tsv```,
+    ```../intermediate_files/unmapped/filt/kmers_unmapped.<KMER_BATCH>.txt``` 
+    
+5.  ```concat_filtered_kmers.sh```: Concatenates sample kmer counts for each region.
+    - ***Inputs***:  ```../intermediate_files/unmapped/filt/kmers_unmapped_counts.<KMER_BATCH>.tsv```,
+    ```../intermediate_files/unmapped/filt/kmers_unmapped.<KMER_BATCH>.txt``` 
+    - ***Inputs***:  ```../data/kmers_unmapped_counts_filt.tsv```, ```../data/kmers_unmapped.txt```
+    
 
 Note: Ran ```move.sh``` and ```organize_directories.sh``` to reorganize file structure a bit to make linux commands run faster.
-
-**June 1, 2020 Finished running pipeline.**

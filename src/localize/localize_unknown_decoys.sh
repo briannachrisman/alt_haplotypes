@@ -8,7 +8,6 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
-## 875 families total.
 
 ### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/localize_unknown_decoys.sh
 

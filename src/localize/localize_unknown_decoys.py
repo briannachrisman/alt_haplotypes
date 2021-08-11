@@ -54,13 +54,14 @@ for start in np.arange(nth_start,nth_start + n_rows, max_chunk):
     L = np.loadtxt(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv' ,
                   delimiter='\t',max_rows=max_chunk, skiprows=start)
     print("Matrix multiplication...")
+    L[np.isinf(L)] = L[~np.isinf(L)].min()
+
     
-    
-    kmer_counts = pd.read_table('/home/groups/dpwall/briannac/alt_haplotypes/data/unknown_kmer_counts.tsv',
+    kmer_counts = pd.read_table('/home/groups/dpwall/briannac/alt_haplotypes/data/unplaced_decoy_seqs_kmer_counts.tsv',
                             header=None, index_col=0, nrows=max_chunk,skiprows=start)
 
     kmer_names = pd.read_table(
-        '/home/groups/dpwall/briannac/alt_haplotypes/data/unknown_kmers.txt',
+        '/home/groups/dpwall/briannac/alt_haplotypes/data/unplaced_decoy_seqs_kmers.txt',
     sep='\t', header=None, nrows=max_chunk, skiprows=start)
     
     

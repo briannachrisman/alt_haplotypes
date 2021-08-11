@@ -20,7 +20,6 @@ print("Loading regions....")
 regions = np.loadtxt(LIKELIHOOD_FILE_DIR + 'global_regions_phasings.tsv', delimiter='\t')
 regions_t = regions.transpose()
 
-
 def GlobalInterval(L, std_thresh=1):
     '''
         Returns the the smallest and largest position where the likelihood is <=1 standard deivation away from the maximum likelihood.
@@ -43,6 +42,30 @@ def GlobalInterval(L, std_thresh=1):
     end_loci = int(end.split('.')[-1])
     if start_chr!=end_chr: return (np.nan, np.nan, np.nan)
     return (start_chr, start_loci, end_loci)
+
+def LRegion(L, p_thresh=.001):
+    '''
+        Returns the the smallest and largest position where the likelihood is <=1 standard deivation away from the maximum likelihood.
+                Parameters:
+                        L (array): Array of likelihoods for each global genomic region.
+                        std_thresh (float): Number of standard deviations away from the maximum likelihood to consider.
+
+                Returns:
+                        interval (tuple): The start and end idxs.
+        '''    
+    if len(np.where(L-np.max(L)>=np.log(1-p_thresh))[0])==0: return (np.nan, np.nan, np.nan)
+    start = np.where(L-np.max(L)>=np.log(1-p_thresh))[0][0]
+    end = np.where(L-np.max(L)>=np.log(1-p_thresh))[0][-1]
+    start = idx_to_global_region[start]
+    end = idx_to_global_region[end]
+    start_chr = int(start.split('.')[0].replace('chr', '').replace('X', '23').replace('Y', '24'))
+    end_chr = int(end.split('.')[0].replace('chr', '').replace('X', '23').replace('Y', '24'))
+    start_loci = int(start.split('.')[1])
+    end_loci = int(end.split('.')[-1])
+    if start_chr!=end_chr: return (np.nan, np.nan, np.nan)
+    return (start_chr, start_loci, end_loci)
+
+#stds = [.1, .05, .01, .005, .001, .0001, .00005]
 
 stds = [.05, .1, .15, .2, .25, .5, 1]
 full_df = np.zeros((n_rows,3*len(stds) + 4))
@@ -69,6 +92,8 @@ for start in np.arange(nth_start,nth_start + n_rows, max_chunk):
     for i, std in enumerate(stds):
         idx = 4 + 3*i
         full_df[start_idx:(start_idx+len(L)),idx:(idx+3)] = [GlobalInterval(l,std)  for l in likelihoods] #[np.array(l) for l in localized_regions]
+        #full_df[start_idx:(start_idx+len(L)),idx:(idx+3)] = [LRegion(l,std)  for l in likelihoods] #[np.array(l) for l in localized_regions]
+
 
 
     # Ground truth values.

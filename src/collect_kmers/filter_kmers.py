@@ -1,7 +1,7 @@
 import pandas as pd
 import time 
 import sys
-
+import numpy as np
 N = int(sys.argv[1])
 
 print("Filtering counts...")
@@ -16,6 +16,9 @@ if df['09C82938'].values[0]=='09C82938':
 
 
 df = df[df.sum(axis=1)>0]
+df = df[((df>0).mean(axis=1)>.2) & ((df>0).mean(axis=1)<.8)]
+df = df[df.apply(lambda x: (np.median(x[x!=0])>2) & (np.median(x[x!=0])<20), axis=1)]
+print(len(df), ' kmers')
 df.index = N*100000+df.index
 print(N,len(df))
 df.to_csv('/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/unmapped/filt/kmers_unmapped_counts.%04d.tsv' % N, sep='\t', header=None)

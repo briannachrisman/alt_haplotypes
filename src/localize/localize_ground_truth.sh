@@ -9,9 +9,8 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
-## 875 families total.
 
-### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/localize_ground_truth.sh
+### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/localize_ground_truth.sh 
 
 N=$((SLURM_ARRAY_TASK_ID-1))
 N_digits=$(printf "%03d" $N)
