@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --job-name=family_likelihoods
 #SBATCH --partition=owners
-#SBATCH --array=1-875
+#SBATCH --array=1
 #SBATCH --output=/scratch/users/briannac/logs/family_likelihoods_%a.out
 #SBATCH --error=/scratch/users/briannac/logs/family_likelihoods_%a.err
 #SBATCH --time=40:00:00
@@ -25,7 +25,7 @@ N_digits=$(printf "%03d" $N)
         N_KMERS=$(wc -l data/kmers_unmapped_filt.txt | awk '{print $1}') ### CHANGE DEPENDING ON FILE!
         ml python/3.6.1 
         python3.6 -u src/localize/family_likelihoods.py $N intermediate_files/family_likelihoods/unmapped/ \
-             data/kmers_unmapped_counts_filt.tsv $N_KMERS
+             intermediate_files/family_likelihoods/kmers_unmapped_prev_and_median_filt_counts.tsv $N_KMERS
     fi
 #fi
 

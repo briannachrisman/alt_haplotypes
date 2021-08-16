@@ -13,6 +13,6 @@
 cd /home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/unmapped/filt
 echo "unzipping..."
 
-cat kmers_unmapped_counts.*.tsv > /home/groups/dpwall/briannac/alt_haplotypes/data/kmers_unmapped_prev_and_median_filt.tsv
+cat kmers_unmapped_counts.*.tsv > /home/groups/dpwall/briannac/alt_haplotypes/data/kmers_unmapped_prev_and_median_filt_counts.tsv
 
 cat kmers_unmapped.*.txt > /home/groups/dpwall/briannac/alt_haplotypes/data/kmers_unmapped_prev_and_median_filt.txt
