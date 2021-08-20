@@ -4,19 +4,18 @@
 #SBATCH --output=/scratch/users/briannac/logs/concat_family_likelihoods.out
 #SBATCH --error=/scratch/users/briannac/logs/concat_family_likelihoods.err
 #SBATCH --time=5:00:00
-#SBATCH --mem=20G
+#SBATCH --mem=100G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
-## 875 families total.
 
 ### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/concat_family_likelihoods.sh
 
 
-cd $MY_HOME/alt_haplotypes/intermediate_files/family_likelihoods/unplaced_decoy_seqs
+cd $MY_HOME/alt_haplotypes/intermediate_files/family_likelihoods/unmapped
 
-\rm global_regions_phasings.tsv
-paste global_regions_phasings_fam*.tsv > global_regions_phasings.tsv
+#\rm global_regions_phasings.tsv
+#paste global_regions_phasings_fam*.tsv > global_regions_phasings.tsv
 
 
 echo "pasting likelihood"

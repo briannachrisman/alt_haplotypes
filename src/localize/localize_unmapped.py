@@ -10,13 +10,13 @@ idx_to_global_region = np.load('/home/groups/dpwall/briannac/alt_haplotypes/data
 
 
 N = int(sys.argv[1])
-n_rows = 100000
+n_rows = 10000
 max_chunk = 1000
 nth_start = N*n_rows
 
 
-LIKELIHOOD_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/unplaced_decoy_seqs/'
-LOCALIZED_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/localize/unplaced_decoy_seqs/'
+LIKELIHOOD_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/unmapped/'
+LOCALIZED_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/localize/unmapped/'
 
 print("Loading regions....")
 regions = np.loadtxt(LIKELIHOOD_FILE_DIR + 'global_regions_phasings.tsv', delimiter='\t')
@@ -47,7 +47,7 @@ def GlobalInterval(L, std_thresh=1):
     return (start_chr, start_loci, end_loci)
 
 
-full_df = np.zeros((N,7)) + np.nan
+full_df = np.zeros((n_rows,5)) + np.nan
 
 
 for start in np.arange(nth_start,nth_start + n_rows, max_chunk):
@@ -59,11 +59,11 @@ for start in np.arange(nth_start,nth_start + n_rows, max_chunk):
     L[np.isinf(L)] = L[~np.isinf(L)].min()
 
     
-    kmer_counts = pd.read_table('/home/groups/dpwall/briannac/alt_haplotypes/data/unmapped_kmer_counts.tsv',
+    kmer_counts = pd.read_table('/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/kmers_unmapped_prev_and_median_filt_counts.tsv',
                             header=None, index_col=0, nrows=max_chunk,skiprows=start)
 
     kmer_names = pd.read_table(
-        '/home/groups/dpwall/briannac/alt_haplotypes/data/unmapped_kmer_counts.txt',
+        '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/kmers_unmapped_prev_and_median_filt.txt',
     sep='\t', header=None, nrows=max_chunk, skiprows=start)
     
     
@@ -72,23 +72,23 @@ for start in np.arange(nth_start,nth_start + n_rows, max_chunk):
 
         
     start_idx =  start-nth_start
-    kmer_chrom = [int(c.split('_')[0].replace('chr', '').replace('X', '23').replace('Y', '24').replace('Un', '-1')) for c in kmer_names[1]]
+    #kmer_chrom = [int(c.split('_')[0].replace('chr', '').replace('X', '23').replace('Y', '24').replace('Un', '-1')) for c in kmer_names[1]]
 
-    kmer_loci = [-1 for c in kmer_names[2]]
-    full_df[start_idx:(start_idx+len(L)),0] = kmer_chrom
-    full_df[start_idx:(start_idx+len(L)),1] = kmer_loci
+    #kmer_loci = [-1 for c in kmer_names[2]]
+    #full_df[start_idx:(start_idx+len(L)),0] = kmer_chrom
+    #full_df[start_idx:(start_idx+len(L)),1] = kmer_loci
 
     # Some metrics about the ground truth kmers.
-    full_df[start_idx:(start_idx+len(L)),2] = kmer_counts.apply(axis=1, func=lambda x: round(x[x!=0].median(), 1))
-    full_df[start_idx:(start_idx+len(L)),3] = np.round((kmer_counts>0).mean(axis=1), 3)
+    full_df[start_idx:(start_idx+len(L)),0] = kmer_counts.apply(axis=1, func=lambda x: round(x[x!=0].median(), 1))
+    full_df[start_idx:(start_idx+len(L)),1] = np.round((kmer_counts>0).mean(axis=1), 3)
 
 
     # Our predicted region.
-    full_df[start_idx:(start_idx+len(L)),4:7] = localized_regions_10 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),2:5] = localized_regions_10 #[np.array(l) for l in localized_regions]
     
     if len(L) < max_chunk: break
 
 np.savetxt(LOCALIZED_FILE_DIR + 'localized.tsv' , np.array(full_df),
-           header='\t'.join(['chrom_true', 'loci_true', 'median_of_nonzeros', 'prevalence', 'chrom_pred', 'start_pred', 'end_pred']), delimiter='\t')
+           header='\t'.join(['median_of_nonzeros', 'prevalence', 'chrom_pred', 'start_pred', 'end_pred']), delimiter='\t')
     
     

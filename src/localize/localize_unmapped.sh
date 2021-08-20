@@ -1,17 +1,19 @@
 #!/bin/sh
-#SBATCH --job-name=localize_unknown_decoys
+#SBATCH --job-name=localize_unmapped
 #SBATCH --partition=dpwall
-#SBATCH --output=/scratch/users/briannac/logs/localize_unknown_decoys.out
-#SBATCH --error=/scratch/users/briannac/logs/localize_unknown_decoys.err
+#SBATCH --array=1
+#SBATCH --output=/scratch/users/briannac/logs/localize_unmapped.out
+#SBATCH --error=/scratch/users/briannac/logs/localize_unmapped.err
 #SBATCH --time=1:00:00
 #SBATCH --mem=50G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
-## 875 families total.
+## 5679230 kmers (so 57 100,000-kmer regions) total.
 
-### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/localize_unknown_decoys.sh
+### file at /home/groups/dpwall/briannac/alt_haplotypes/src/localize/localize_unmapped.sh
 
+# 5 million 
 ml python/3.6.1 
 
 N=$((SLURM_ARRAY_TASK_ID-1))

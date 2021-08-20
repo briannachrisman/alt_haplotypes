@@ -27,7 +27,7 @@ Final results of kmer x sample matrix should be in ```../data/kmers_unmapped_cou
     - ***Inputs***:  ```../intermediate_files/kmers/<SAMPLE>/<SAMPLE>.query_counts.unmapped_reads.txt```
     - ***Outputs***: ```../intermediate_files/unmapped/query_counts.unmapped_reads.<KMER_BATCH>.txt```    
 
-4.  ```filter_kmers.sh```: Filters kmers & counts based on prevalence and median. **TODO: CURRENTLY RUNNING**
+4.  ```filter_kmers.sh```: Filters kmers & counts based on prevalence and median. Total # of filtered kmers was 5,679,230.
     - ***Inputs***:  ```../intermediate_files/unmapped/query_counts.unmapped_reads.<KMER_BATCH>.txt```    
     - ***Outputs***:  ```../intermediate_files/unmapped/filt/kmers_unmapped_counts.<KMER_BATCH>.tsv```,
     ```../intermediate_files/unmapped/filt/kmers_unmapped.<KMER_BATCH>.txt``` 
