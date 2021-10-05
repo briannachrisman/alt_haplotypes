@@ -1,10 +1,10 @@
 #!/bin/sh
 #SBATCH --job-name=family_likelihoods
-#SBATCH --partition=owners
-#SBATCH --array=10,19,30,40,61,76,83,99,107,124,134,199,223,249,268,294,348,370,376,408,415,426,438,443,471,476,482,490,503,518,549,560,564,575,588,608,627,654,718,722,764
+#SBATCH --partition=dpwall
+#SBATCH --array=99,268,415
 #SBATCH --output=/scratch/users/briannac/logs/family_likelihoods_%a.out
 #SBATCH --error=/scratch/users/briannac/logs/family_likelihoods_%a.err
-#SBATCH --time=48:00:00
+#SBATCH --time=60:00:00
 #SBATCH --mem=100G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu

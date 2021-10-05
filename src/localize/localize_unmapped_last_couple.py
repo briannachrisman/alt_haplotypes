@@ -53,11 +53,12 @@ full_df = np.zeros((n_rows,5)) + np.nan
 
 
 
-
-for L in pd.read_table(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv' ,
-                  chunksize=max_chunk, skiprows=nth_start, header=None): #np.arange(nth_start,nth_start + n_rows, max_chunk):
+print("Done loading phasings/regions...")
+for L in pd.read_table('/scratch/users/briannac/tmp/split_likelihood_matrix_phasings_kmers/split_likelihood_matrix_phasings_kmer%04d.tsv' % N ,
+                  chunksize=max_chunk, header=None): #np.arange(nth_start,nth_start + n_rows, max_chunk):
+    start = L.index[0]
     print(start)
-    start = nth_start + L.index[0]
+
     print('Loading likelihoods...')
     L = np.matrix(L) #loadtxt(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv' ,
                   #delimiter='\t',max_rows=max_chunk, skiprows=start)
@@ -77,7 +78,7 @@ for L in pd.read_table(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.t
     localized_regions_10 = [GlobalInterval(l,.1)  for l in likelihoods]
 
         
-    start_idx =  start-nth_start
+    start_idx =  start#-nth_start
     #kmer_chrom = [int(c.split('_')[0].replace('chr', '').replace('X', '23').replace('Y', '24').replace('Un', '-1')) for c in kmer_names[1]]
 
     #kmer_loci = [-1 for c in kmer_names[2]]
