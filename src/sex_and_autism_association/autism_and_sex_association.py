@@ -14,6 +14,7 @@ bam_mappings = bam_mappings.drop('09C86428')
 
 ##### Sex association ####
 # Get pairings.
+print("Getting pairings...")
 samples = bam_mappings.index
 affected_pairs = []
 unaffected_pairs = []
@@ -59,10 +60,8 @@ sig_covs_vcf.to_csv('/home/groups/dpwall/briannac/alt_haplotypes/intermediate_fi
 
     
 #### ASD Association ####
-
+print ("setting up ")
 # Set up dataframe to save.    
-pvals_asd = np.array([2*min(p, 1-p) for p in pvals])
-idx = np.array([i for i,p in enumerate(pvals_asd) if ~np.isnan(p)])# Get pairings.
 samples = bam_mappings.index
 male_pairs = []
 female_pairs = []
@@ -73,8 +72,8 @@ for f in set(bam_mappings.family):
     unaffected_females = fam[(fam.sex_numeric=='2.0') & (pd.isna(fam.derived_affected_status))]
     unaffected_males = fam[(fam.sex_numeric=='1.0') & (pd.isna(fam.derived_affected_status))]
     
-    male_pairs = affected_pairs + [(i,j) for i in affected_males.index for j in unaffected_males.index if ((i in samples) and (j in samples))]
-    female_pairs = unaffected_pairs + [(i,j) for i in affected_females.index for j in unaffected_females.index if ((i in samples) and (j in samples))]
+    male_pairs = male_pairs + [(i,j) for i in affected_males.index for j in unaffected_males.index if ((i in samples) and (j in samples))]
+    female_pairs = female_pairs + [(i,j) for i in affected_females.index for j in unaffected_females.index if ((i in samples) and (j in samples))]
 affecteds = [a for a,u in (male_pairs + female_pairs)]
 unaffecteds = [u for a,u in (male_pairs + female_pairs)]    
 

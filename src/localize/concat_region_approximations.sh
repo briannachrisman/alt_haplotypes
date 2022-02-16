@@ -15,8 +15,8 @@
 
 cd $MY_HOME/alt_haplotypes
 
-cat intermediate_files/localize/unmapped/localized_*.tsv >  intermediate_files/localize/unmapped/localized.tsv
-cp intermediate_files/localize/unmapped/localized.tsv $MY_HOME/alt_haplotypes/results/approximate_regions/localized_unmapped.tsv
+cat intermediate_files/localize/decoy_known/localized_*.tsv >  intermediate_files/localize/decoy_known/localized.tsv
+cp intermediate_files/localize/decoy_known/localized.tsv $MY_HOME/alt_haplotypes/results/approximate_regions/localized_decoy_known.tsv
 
 #\rm intermediate_files/approximate_regions/ground_truth_approximate_region_*.txt
 

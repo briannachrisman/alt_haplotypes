@@ -8,6 +8,7 @@ Scripts to localize k-mers to specific regions of the genome via a likelihood mo
 
 ## Pipeline
 
+1 .```family_phasing_dictionary.py```
 
 1. ```family_likelihoods.sh```: For each family, computes (1) a matrix of Likelihoods with possible phasings for rows x kmers for columns and (2) a presence/absence matrix with possible phasings as rows and global regions as columns.
     - **Inputs**: ```data/<ground_truth|unplaced_decoy_seqs|unmapped>_kmers.txt```, ```data/<ground_truth|unplaced_decoy_seqs|unmapped>_kmer_counts.tsv```

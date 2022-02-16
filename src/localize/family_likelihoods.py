@@ -32,9 +32,7 @@ BAM_MAPPINGS_FILE = '/home/groups/dpwall/briannac/general_data/bam_mappings.csv'
 print("Loading in files...")
 # Load in family region/global region conversion data.
 fam_region_to_idx = np.load(PHASINGS_DIR +  'fam_region_to_idx.npy', allow_pickle=True).item()
-idx_to_fam_region = np.load(PHASINGS_DIR +  'idx_to_fam_region.npy', allow_pickle=True).item()
 global_region_to_idx = np.load(PHASINGS_DIR +  'global_region_to_idx.npy', allow_pickle=True).item()
-idx_to_global_region = np.load(PHASINGS_DIR +  'idx_to_global_region.npy', allow_pickle=True).item()
 fam_idx_to_global_idx = np.load(PHASINGS_DIR + 'fam_regions_to_global_regions.npy', allow_pickle=True)
 family_info = pd.read_pickle(PHASINGS_DIR + 'fam_list.df')
 
@@ -69,30 +67,30 @@ avg_n_100mers = (150-kmer_length)/(150/avg_coverage)
 kmer_depth_dict = {k:avg_n_100mers[k] if k in avg_n_100mers else np.mean(avg_n_100mers.values) for k in bam_mappings.index}
 avg_k_depth = np.mean(list(kmer_depth_dict.values()))
 
-
-
 ###########################################################
 ####### Set up poisson cache and access function. ########
 ###########################################################
 print("Setting up poisson cache...")
-max_count = 100
-eps = 0
+max_count = 40
+eps = 1e-20
+possible_repeats = {0,1,2,3,4,5}
 with open('/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/phased_fams/phased_fams_all.pickle', 'rb') as f:
     phased_fam_dict = pickle.load(f)
 family_phasings = sorted(list(set([tuple(v) for v in phased_fam_dict[family].values])))
-poisson_cache = [[], []]
+poisson_cache = {}
 avg_kmer_depth=np.mean(list(kmer_depth_dict.values()))
-poisson_cache[0] = [poisson.pmf(k=k, mu=avg_kmer_depth) for k in range(max_count)]
-poisson_cache[1] = [poisson.pmf(k=k, mu=2*avg_kmer_depth) for k in range(max_count)]
-eps = min(min(poisson_cache[0]), min(poisson_cache[1]))
-print(eps)
+for i in (possible_repeats):
+    for j in possible_repeats:
+        if j>i: 
+            for k in range(max_count):
+                prob = poisson.pmf(k=k, mu=int(i+j)*avg_kmer_depth)
+                if prob>eps: poisson_cache[(i+j, k)] = prob
+    
 def cached_poisson_pmf(k,g):
     if (g==0) & (k!=0): return eps
     if (g==0) & (k==0): return 1-3*eps
-    if k>=max_count: return eps
-    return min(max(poisson_cache[g-1][k], eps), 1-3*eps)
-
-
+    if (g,k) not in poisson_cache: return eps
+    return min(max(poisson_cache[g,k], eps), 1-3*eps)
 
 ###########################################################
 #### Computing phasing x global region Presence matrix ####
@@ -107,44 +105,70 @@ for k,v in pd.DataFrame(phased_fam_dict[family].apply(lambda x: tuple(x), axis=1
         
 # If we don't know the phasing, then default to most common phasing.
 # Doing it this way will assign unknown regions the most common likelihood of the whole family's genome.
-# If we didn't do this, we would end up with have the likelihood=0 at regions w/unknown phases, this will give unknown regions an unfair advantage.
+# If we didn't do this, we would end up with have the log-likelihood=0 at regions w/unknown phases, this will give unknown regions an unfair advantage.
 impute_vector = np.zeros(len(family_phasings))
 impute_vector[np.argmax(global_regions_phasings_fam.sum(axis=0))] = 1
 
 #impute_vector = np.apply_along_axis(arr=global_regions_phasings_fam[np.where(global_regions_phasings_fam.sum(axis=1)!=0)[0], :], func1d=np.median, axis=0)
 for i in np.where(global_regions_phasings_fam.sum(axis=1)==0)[0]:
     global_regions_phasings_fam[i,:]=impute_vector
+ 
 
-
-
-###########################################################
-###### Computing phasing x k-mer Likelihood matrix ########
-###########################################################
-import time
 print("Computing phasing x k-mer region likelihood matrix...")
-phases_kmers_L = np.zeros((N_KMERS,len(family_phasings)))  # Initializ likelihood matrix (phases as rows, kmers as columns)
-chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=10000, usecols=1+cols_in_df, nrows=N_KMERS)
+phases_kmers_L = np.zeros((N_KMERS,len(family_phasings)))  # Initialize likelihood matrix (phases as rows, kmers as columns)
+
+# Read in kmer counts file. (Hacky way to fix some differences between unmapped reads & synthetic datasets.)
+if 'unmapped' in KMER_COUNTS_FILE: # Unmappd data has no header.
+    chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=1000000, usecols=1+cols_in_df, nrows=N_KMERS)
+elif 'decoy' in KMER_COUNTS_FILE: # Decoy data has no header.
+    chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=100000, usecols=1+cols_in_df, nrows=N_KMERS)
+else: # synthetic dataset has header with samples.
+    chunks = pd.read_table(KMER_COUNTS_FILE, chunksize=100000, nrows=N_KMERS,usecols=samples)    
+    
 for kmer_counts in chunks:
-    #print(time.time())
-    kmer_counts = kmer_counts[1+cols_in_df]
-    kmer_counts.columns = samples
+    if ('unmapped' in KMER_COUNTS_FILE) or ('decoy' in KMER_COUNTS_FILE):
+        kmer_counts = kmer_counts[1+cols_in_df]
+        kmer_counts.columns = samples
     print(kmer_counts.index[0])
     norm_mult = np.array([avg_k_depth/kmer_depth_dict[c] for c in kmer_counts.columns])
     kmer_counts = kmer_counts[((kmer_counts>0).sum(axis=1)>0)]
-    kmer_counts_normed = kmer_counts.apply(lambda x: round(x*norm_mult), axis=1).astype(int)
+    kmer_counts_normed = kmer_counts.apply(lambda x: x*norm_mult, axis=1)
+    kmer_counts_normed = kmer_counts_normed.apply(lambda x: np.round(x/(10**np.floor(np.log10(max(x[x>0]))))), axis=1).astype(int)
+    kmer_counts_normed = kmer_counts_normed.applymap(lambda x: min(x,max_count))
     poss_kmer_counts = set([tuple(v) for v in kmer_counts_normed.values])
     family_probability_cache = dict()
+    
     for phases_ch in family_phasings:
-        possible_gs = [(0,0), (0,1), (1,0), (1,1)]
-        for kmer_count_set in poss_kmer_counts:
+        print(phases_ch)
+        # If X chromosome:
+        if (max([f for ff in phases_ch for f in ff]) > 3) & (max([f for ff in phases_ch for f in ff]) < 8):
+            phases_ch_compute = [(f-4,g-4) for f,g in phases_ch]
+            possible_gs_mom = [(mat_gt,pat_gt) for mat_gt in possible_repeats for pat_gt in possible_repeats] # Include possible repeats!
+            possible_gs_dad = [(mat_gt,0) for mat_gt in possible_repeats]
+
+        # If Y chromosome:
+        elif (max([f for ff in phases_ch for f in ff]) > 7):
+            phases_ch_compute = [(f-8,g-8) for f,g in phases_ch]
+            possible_gs_mom = [(0,0)] 
+            possible_gs_dad = [(0,pat_gt) for pat_gt in possible_repeats]
+
+            
+        # Autosome or PAR
+        else :
+            possible_gs_mom = [(mat_gt,pat_gt) for mat_gt in possible_repeats for pat_gt in possible_repeats] 
+            possible_gs_dad = [(mat_gt,pat_gt) for mat_gt in possible_repeats for pat_gt in possible_repeats] 
+            phases_ch_compute =  phases_ch
+        
+        print(len(poss_kmer_counts)) # Could we parallelize this?
+        for kmer_count_set in (poss_kmer_counts):
             k_m = kmer_count_set[0]
             k_p = kmer_count_set[1]
             k_cs = kmer_count_set[2:]
-            family_probability_cache[((k_m, k_p, *k_cs), phases_ch)] = round(np.log2(sum(
+            family_probability_cache[((k_m, k_p, *k_cs), phases_ch)] = round(np.log2(np.max(
                 [cached_poisson_pmf(k_m,sum(g_m))*
                  cached_poisson_pmf(k_p,sum(g_p))*
-                 np.prod([cached_poisson_pmf(k_c, g_m[phase_ch[0]]+g_p[phase_ch[1]]) for k_c, phase_ch in zip(k_cs, phases_ch)]
-                        ) for g_p in possible_gs for g_m in possible_gs])),3)
+                 np.prod([cached_poisson_pmf(k_c, g_m[phase_ch[0]]+g_p[phase_ch[1]]) for k_c, phase_ch in zip(k_cs, phases_ch_compute)]
+                        ) for g_m in possible_gs_mom for g_p in possible_gs_dad])),3)
 
     print('Done making cached dictionary.')
     # Compute likelihood matrix (phasings x kmers)
