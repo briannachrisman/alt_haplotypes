@@ -88,7 +88,7 @@ for L in pd.read_table(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.t
     if len(L) < max_chunk: break # finish after we can't quite fill up max chunk size.
         
 full_df = full_df[:(start_idx + len(L))]
-np.savetxt(LOCALIZED_FILE_DIR + 'localized_%03d.tsv' % N , np.array(full_df),
+np.savetxt(LOCALIZED_FILE_DIR + 'localized_%04d.tsv' % N , np.array(full_df),
            header='\t'.join(['chrom_pred1', 'start_pred1', 'end_pred1', 
                             'chrom_pred5', 'start_pred5', 'end_pred5',
                             'chrom_pred10', 'start_pred10', 'end_pred10',

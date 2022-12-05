@@ -1,12 +1,12 @@
 #!/bin/sh
 #SBATCH --job-name=family_likelihoods_unmapped
-#SBATCH --partition=owners
-#SBATCH --array=1,105,126,3,38,4,552,599,722,737,759,764,84
+#SBATCH --partition=dpwall
+#SBATCH --array=1-5
 #SBATCH --output=/scratch/users/briannac/logs/family_likelihoods_unmapped_%a.out
 #SBATCH --error=/scratch/users/briannac/logs/family_likelihoods_unmapped_%a.err
-#SBATCH --time=48:00:00
-#SBATCH --mem=100G
-#SBATCH --cpus-per-task=31
+#SBATCH --time=50:00:00
+#SBATCH --mem=50G
+#SBATCH --cpus-per-task=10
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=briannac@stanford.edu
 
@@ -21,6 +21,7 @@ cd $MY_HOME/alt_haplotypes
 N=$((SLURM_ARRAY_TASK_ID-1))
 N_digits=$(printf "%03d" $N)
 N_KMERS=104565782 # Number of k-mers/counts present in file.
+
 
 
 ml python/3.6.1

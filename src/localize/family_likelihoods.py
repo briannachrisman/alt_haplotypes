@@ -14,13 +14,16 @@ from scipy.stats import poisson
 import time
 import sys
 import pandas as pd
+from multiprocessing import Pool, freeze_support, cpu_count
+import os
+
 
 # Set up file locations.
 IDX = int(sys.argv[1])
 OUT_DIR = sys.argv[2] # /home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/ground_truth/
 KMER_COUNTS_FILE = sys.argv[3] #'/home/groups/dpwall/briannac/alt_haplotypes/data/known_kmer_counts.tsv'
 N_KMERS = int(sys.argv[4]) #1094247 # Number of kmers in KMER_COUNTS_FILE file
-
+N_CPUS=30
 
 PHASINGS_DIR='/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/'
 BAM_MAPPINGS_FILE = '/home/groups/dpwall/briannac/general_data/bam_mappings.csv'
@@ -119,27 +122,39 @@ phases_kmers_L = np.zeros((N_KMERS,len(family_phasings)))  # Initialize likeliho
 
 # Read in kmer counts file. (Hacky way to fix some differences between unmapped reads & synthetic datasets.)
 if 'unmapped' in KMER_COUNTS_FILE: # Unmappd data has no header.
-    chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=1000000, usecols=1+cols_in_df, nrows=N_KMERS)
+    chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=10000000, usecols=1+cols_in_df, nrows=N_KMERS)
 elif 'decoy' in KMER_COUNTS_FILE: # Decoy data has no header.
     chunks = pd.read_table(KMER_COUNTS_FILE, header=None,  chunksize=100000, usecols=1+cols_in_df, nrows=N_KMERS)
 else: # synthetic dataset has header with samples.
     chunks = pd.read_table(KMER_COUNTS_FILE, chunksize=100000, nrows=N_KMERS,usecols=samples)    
+
+# Faster way to take product + max L.    
+def prob_product(k_cs, k_m, k_p, phases_ch_compute,possible_gs_mom,possible_gs_dad):
+    max_so_far = 0
+    for g_m in possible_gs_mom:
+        for g_p in iter(possible_gs_dad):
+            A = cached_poisson_pmf(k_m,sum(g_m))*cached_poisson_pmf(k_p,sum(g_p))
+            for k_c, phase_ch in zip(iter(k_cs), iter(phases_ch_compute)):
+                if A <= max_so_far: break
+                A=A*cached_poisson_pmf(k_c, g_m[phase_ch[0]]+g_p[phase_ch[1]])
+            max_so_far = max(A,max_so_far)
+    return max_so_far
+    
     
 for kmer_counts in chunks:
     if ('unmapped' in KMER_COUNTS_FILE) or ('decoy' in KMER_COUNTS_FILE):
         kmer_counts = kmer_counts[1+cols_in_df]
         kmer_counts.columns = samples
-    print(kmer_counts.index[0])
+    print(len(kmer_counts), 'kmer counts')
     norm_mult = np.array([avg_k_depth/kmer_depth_dict[c] for c in kmer_counts.columns])
-    kmer_counts = kmer_counts[((kmer_counts>0).sum(axis=1)>0)]
+    kmer_counts = kmer_counts[((kmer_counts).sum(axis=1)>0)]
     kmer_counts_normed = kmer_counts.apply(lambda x: x*norm_mult, axis=1)
     kmer_counts_normed = kmer_counts_normed.apply(lambda x: np.round(x/(10**np.floor(np.log10(max(x[x>0]))))), axis=1).astype(int)
     kmer_counts_normed = kmer_counts_normed.applymap(lambda x: min(x,max_count))
     poss_kmer_counts = set([tuple(v) for v in kmer_counts_normed.values])
     family_probability_cache = dict()
-    
-    for phases_ch in family_phasings:
-        print(phases_ch)
+    print(len(poss_kmer_counts), 'unique kmer counts')
+    for phases_ch in tqdm(family_phasings):
         # If X chromosome:
         if (max([f for ff in phases_ch for f in ff]) > 3) & (max([f for ff in phases_ch for f in ff]) < 8):
             phases_ch_compute = [(f-4,g-4) for f,g in phases_ch]
@@ -159,17 +174,17 @@ for kmer_counts in chunks:
             possible_gs_dad = [(mat_gt,pat_gt) for mat_gt in possible_repeats for pat_gt in possible_repeats] 
             phases_ch_compute =  phases_ch
         
-        print(len(poss_kmer_counts)) # Could we parallelize this?
-        for kmer_count_set in (poss_kmer_counts):
+        # Parallelize this step.
+        def myfunc(kmer_count_set):
             k_m = kmer_count_set[0]
             k_p = kmer_count_set[1]
             k_cs = kmer_count_set[2:]
-            family_probability_cache[((k_m, k_p, *k_cs), phases_ch)] = round(np.log2(np.max(
-                [cached_poisson_pmf(k_m,sum(g_m))*
-                 cached_poisson_pmf(k_p,sum(g_p))*
-                 np.prod([cached_poisson_pmf(k_c, g_m[phase_ch[0]]+g_p[phase_ch[1]]) for k_c, phase_ch in zip(k_cs, phases_ch_compute)]
-                        ) for g_m in possible_gs_mom for g_p in possible_gs_dad])),3)
+            return ((k_m, k_p, *k_cs), round(np.log2(prob_product(k_cs, k_m, k_p, phases_ch_compute,iter(possible_gs_mom),possible_gs_dad)),3))
 
+        pool = Pool(N_CPUS)
+        family_probability_cache.update({(k, phases_ch):v for k,v in pool.map(myfunc,poss_kmer_counts)})
+        pool.close()
+        pool.join()
     print('Done making cached dictionary.')
     # Compute likelihood matrix (phasings x kmers)
     for i,p in enumerate(family_phasings):

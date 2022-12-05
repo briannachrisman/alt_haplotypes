@@ -6,20 +6,26 @@ import numpy as np
 from collections import Counter
 import sys
 
+
+N = int(sys.argv[1])-1
+LIKELIHOOD_FILE_DIR = sys.argv[2] #'/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/unmapped_with_sex/'
+LOCALIZED_FILE_DIR = sys.argv[3] #'/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/localize/unmapped_with_sex/'
+n_rows = int(sys.argv[4])
+
+print(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv')
+
 idx_to_global_region = np.load('/home/groups/dpwall/briannac/alt_haplotypes/data/phasings/idx_to_global_region.npy', allow_pickle=True).item()
 
 
-N = int(sys.argv[1])
-n_rows = 100000
 max_chunk = 1000
 nth_start = N*n_rows
 
 
-LIKELIHOOD_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/unmapped/'
-LOCALIZED_FILE_DIR = '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/localize/unmapped/'
-
 print("Loading regions....")
 regions = np.loadtxt(LIKELIHOOD_FILE_DIR + 'global_regions_phasings.tsv', delimiter='\t')
+#regions = np.loadtxt('/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/global_regions_phasings/global_regions_phasings.tsv', 
+#                     delimiter='\t')
+
 regions_t = regions.transpose()
 
 
@@ -47,54 +53,47 @@ def GlobalInterval(L, std_thresh=1):
     return (start_chr, start_loci, end_loci)
 
 
-full_df = np.zeros((n_rows,5)) + np.nan
-
-
-
-
-
-
-for L in pd.read_table(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv' ,
-                  chunksize=max_chunk, skiprows=nth_start, header=None): #np.arange(nth_start,nth_start + n_rows, max_chunk):
+full_df = np.zeros((n_rows,18)) + np.nan
+print("Reading in likelihood file...", LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers_split%04d' % N)
+# The difference between localize_unmapped.py and localize.py is that we spilt up the likelihood files before reading them in.
+for L in pd.read_table(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers_split%04d' % N,
+                  chunksize=max_chunk, header=None, nrows=n_rows): #np.arange(nth_start,nth_start + n_rows, max_chunk):
+    
+    start = L.index[0]
     print(start)
-    start = nth_start + L.index[0]
     print('Loading likelihoods...')
-    L = np.matrix(L) #loadtxt(LIKELIHOOD_FILE_DIR + 'likelihood_matrix_phasings_kmers.tsv' ,
-                  #delimiter='\t',max_rows=max_chunk, skiprows=start)
+    L = np.matrix(L) 
     print("Matrix multiplication...")
     L[np.isinf(L)] = L[~np.isinf(L)].min()
 
-    
-    kmer_counts = pd.read_table('/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/kmers_unmapped_prev_and_median_filt_counts.tsv',
-                            header=None, index_col=0, nrows=max_chunk,skiprows=start)
-
-    kmer_names = pd.read_table(
-        '/home/groups/dpwall/briannac/alt_haplotypes/intermediate_files/family_likelihoods/kmers_unmapped_prev_and_median_filt.txt',
-    sep='\t', header=None, nrows=max_chunk, skiprows=start)
-    
-    
-    likelihoods = np.matmul(L, regions_t)
+    likelihoods = np.array(np.matmul(L, regions_t))
+    localized_regions_1 = [GlobalInterval(l,.01)  for l in likelihoods]
+    localized_regions_5 = [GlobalInterval(l,.05)  for l in likelihoods]
     localized_regions_10 = [GlobalInterval(l,.1)  for l in likelihoods]
+    localized_regions_25 = [GlobalInterval(l,.25)  for l in likelihoods]
+    localized_regions_50 = [GlobalInterval(l,.5)  for l in likelihoods]
+    localized_regions_100 = [GlobalInterval(l,1)  for l in likelihoods]
 
-        
-    start_idx =  start-nth_start
-    #kmer_chrom = [int(c.split('_')[0].replace('chr', '').replace('X', '23').replace('Y', '24').replace('Un', '-1')) for c in kmer_names[1]]
-
-    #kmer_loci = [-1 for c in kmer_names[2]]
-    #full_df[start_idx:(start_idx+len(L)),0] = kmer_chrom
-    #full_df[start_idx:(start_idx+len(L)),1] = kmer_loci
-
-    # Some metrics about the ground truth kmers.
-    full_df[start_idx:(start_idx+len(L)),0] = kmer_counts.apply(axis=1, func=lambda x: round(x[x!=0].median(), 1))
-    full_df[start_idx:(start_idx+len(L)),1] = np.round((kmer_counts>0).mean(axis=1), 3)
-
+    start_idx =  start #-nth_start
 
     # Our predicted region.
-    full_df[start_idx:(start_idx+len(L)),2:5] = localized_regions_10 #[np.array(l) for l in localized_regions]
-    
-    if len(L) < max_chunk: break
+    full_df[start_idx:(start_idx+len(L)),:3] = localized_regions_1 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),3:6] = localized_regions_5 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),6:9] = localized_regions_10 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),9:12] = localized_regions_25 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),12:15] = localized_regions_50 #[np.array(l) for l in localized_regions]
+    full_df[start_idx:(start_idx+len(L)),15:18] = localized_regions_100 #[np.array(l) for l in localized_regions]
 
-np.savetxt(LOCALIZED_FILE_DIR + 'localized_%i.tsv' % N , np.array(full_df),
-           header='\t'.join(['median_of_nonzeros', 'prevalence', 'chrom_pred', 'start_pred', 'end_pred']), delimiter='\t')
+    
+    if len(L) < max_chunk: break # finish after we can't quite fill up max chunk size.
+        
+full_df = full_df[:(start_idx + len(L))]
+np.savetxt(LOCALIZED_FILE_DIR + 'localized_%04d.tsv' % N , np.array(full_df),
+           header='\t'.join(['chrom_pred1', 'start_pred1', 'end_pred1', 
+                            'chrom_pred5', 'start_pred5', 'end_pred5',
+                            'chrom_pred10', 'start_pred10', 'end_pred10',
+                            'chrom_pred25', 'start_pred25', 'end_pred25',
+                            'chrom_pred50', 'start_pred50', 'end_pred50',
+                            'chrom_pred100', 'start_pred100', 'end_pred100']), delimiter='\t')
     
     
